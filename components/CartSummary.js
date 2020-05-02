@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-import { useShoppingCart } from 'use-shopping-cart';
+import { useShoppingCart, formatCurrencyString } from 'use-shopping-cart';
 import PaymentRequest from '../components/PaymentRequest';
 
 const CartSummary = () => {
@@ -9,6 +9,7 @@ const CartSummary = () => {
     totalPrice,
     cartCount,
     clearCart,
+    cartItems,
     cartDetails,
     redirectToCheckout,
   } = useShoppingCart();
@@ -17,7 +18,7 @@ const CartSummary = () => {
     event.preventDefault();
     setLoading(true);
 
-    const response = await fetch('/api/checkout_sessions', {
+    const { sessionId } = await fetch('/api/checkout_sessions', {
       method: 'post',
       headers: {
         'Content-Type': 'application/json',
@@ -32,7 +33,7 @@ const CartSummary = () => {
         setLoading(false);
       });
 
-    redirectToCheckout({ sessionId: response.sessionId });
+    redirectToCheckout({ sessionId });
   };
 
   return (
@@ -40,7 +41,15 @@ const CartSummary = () => {
       <h2>Cart summary</h2>
       {/* This is where we'll render our cart */}
       <p>Number of Items: {cartCount}</p>
-      <p>Total: {totalPrice()}</p>
+      <p>Subtotal: {totalPrice()}</p>
+      <p>Shipping: {formatCurrencyString({ value: 350, currency: 'USD' })}</p>
+      <p>
+        Total:{' '}
+        {formatCurrencyString({
+          value: cartItems.reduce((acc, { price }) => acc + price, 350),
+          currency: 'USD',
+        })}
+      </p>
 
       <PaymentRequest />
       {/* Redirects the user to Stripe */}

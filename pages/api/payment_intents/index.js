@@ -17,41 +17,29 @@ export default async (req, res) => {
     const cartItems = req.body;
 
     const line_items = validateCartItems(inventory, cartItems);
+    const amount = line_items.reduce(
+      (sum, { amount, quantity }) => sum + amount * quantity,
+      350 // Shipping fee
+    );
 
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      billing_address_collection: 'auto',
-      shipping_address_collection: {
-        allowed_countries: ['US', 'CA'],
-      },
-      success_url: `${req.headers.origin}/success`,
-      cancel_url: `${req.headers.origin}`,
-      line_items: [
-        ...line_items,
-        {
-          name: 'Shipping fee',
-          description: 'Handling and shipping fee for global delivery',
-          quantity: 1,
-          amount: 350,
-          currency: 'USD',
-        },
-      ],
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount,
+      currency: 'usd',
       // We are using the metadata to track which items were purchased.
       // We can access this meatadata in our webhook handler to then handle
       // the fulfillment process.
       // In a real application you would track this in an order object in your database.
-      payment_intent_data: {
-        metadata: {
-          items: JSON.stringify(
-            Object.keys(cartItems).map((sku) => ({
-              sku,
-              quantity: cartItems[sku].quantity,
-            }))
-          ),
-        },
+      metadata: {
+        items: JSON.stringify(
+          Object.keys(cartItems).map((sku) => ({
+            sku,
+            quantity: cartItems[sku].quantity,
+          }))
+        ),
       },
     });
-    res.status(200).json({ sessionId: session.id });
+
+    res.status(200).json({ clientSecret: paymentIntent.client_secret });
   } catch (error) {
     console.log({ error });
 

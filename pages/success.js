@@ -9,7 +9,7 @@ const success = () => {
 
   return (
     <main>
-      <h1>Thanks for your purchase heart ❤️</h1>
+      <h1>Thanks for your purchase ❤️</h1>
     </main>
   );
 };
